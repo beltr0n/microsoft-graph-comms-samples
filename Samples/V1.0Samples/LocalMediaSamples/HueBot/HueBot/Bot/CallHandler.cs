@@ -116,6 +116,11 @@ namespace Sample.HueBot.Bot
             /// The green.
             /// </summary>
             Green,
+
+            /// <summary>
+            /// The Warhol.
+            /// </summary>
+            Warhol,
         }
 
         /// <summary>
