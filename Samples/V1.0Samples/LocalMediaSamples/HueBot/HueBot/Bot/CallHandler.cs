@@ -116,6 +116,26 @@ namespace Sample.HueBot.Bot
             /// The green.
             /// </summary>
             Green,
+
+            /// <summary>
+            /// Warhol.
+            /// </summary>
+            Warhol,
+
+            /// <summary>
+            /// Presenter view.
+            /// </summary>
+            Presenter,
+
+            /// <summary>
+            /// Picture in Picture.
+            /// </summary>
+            Pip,
+
+            /// <summary>
+            /// Mono.
+            /// </summary>
+            Mono,
         }
 
         /// <summary>

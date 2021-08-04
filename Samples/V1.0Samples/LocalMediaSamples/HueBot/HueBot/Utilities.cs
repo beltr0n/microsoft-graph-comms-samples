@@ -108,15 +108,115 @@ namespace Sample.HueBot
             // DoubleFrame(buffer, videoMediaBuffer.VideoFormat.Width, videoMediaBuffer.VideoFormat.Height);
 
             var yuv = new YUV(buffer, videoMediaBuffer.VideoFormat.Width, videoMediaBuffer.VideoFormat.Height, videoMediaBuffer.Stride);
+            switch(hueColor)
+            {
+                case CallHandler.HueColor.Presenter:
+                    PresenterView(yuv);
+                    break;
+                case CallHandler.HueColor.Mono:
+                    PictureOnMono(yuv, 3);
+                    break;
+                case CallHandler.HueColor.Pip:
+                    PictureInPicture(yuv, 3);
+                    break;
 
-            //if (DateTime.Now.Second < 30)
-            //    PictureOnMono(yuv, 3);
-            //else
-            //    PictureInPicture(yuv, 3);
-
-            PresenterView(yuv);
-
+                default: 
+                    ApplyHue(buffer, hueColor, videoMediaBuffer.VideoFormat.Width, videoMediaBuffer.VideoFormat.Height);
+                    break;
+            }
+            
             return buffer;
+        }
+
+
+        /// <summary>
+        /// Splits into 4 rectangles.
+        /// </summary>
+        /// <param name="buffer">The buffer.</param>
+        /// <param name="width">The width.</param>
+        /// <param name="height">The height.</param>
+        public static void Warhol(byte[] buffer, int width, int height)
+        {
+            byte[] buffer2 = (byte[])buffer.Clone();
+
+            int subWidth = width / 2;
+            int i;
+            for (int y = 0; y < height; y += 2)
+            {
+                i = y * subWidth;
+                int yOffset = y * width;
+                for (int x = 0; x < width; x += 2)
+                {
+                    int dest = x + yOffset;
+
+                    int topLeft = i;
+                    int topRight = topLeft + subWidth;
+                    int bottomLeft = topLeft + (width * height / 2);
+                    int bottomRight = bottomLeft + subWidth;
+
+                    buffer[topLeft] = buffer2[dest];
+                    buffer[topRight] = buffer2[dest];
+                    buffer[bottomLeft] = buffer2[dest];
+                    buffer[bottomRight] = buffer2[dest];
+
+                    i++;
+                }
+            }
+
+            int widthXheight = width * height;
+            for (var index = widthXheight; index < widthXheight * 3 / 2; index += 2)
+            {
+                AddWithoutRollover(buffer, index, -16);
+                AddWithoutRollover(buffer, index + 1, 50);
+            }
+        }
+
+        /// <summary>
+        /// Applies the hue colour onto the specified buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer.</param>
+        /// <param name="rawIndex">The raw index.</param>
+        /// <param name="normalizedIndex">The normalized index.</param>
+        /// <param name="width">The width.</param>
+        /// <param name="height">The height.</param>
+        public static void ApplyWarholHue(byte[] buffer, int rawIndex, int normalizedIndex, int width, int height)
+        {
+            // Let's greyscale convert!
+            buffer[rawIndex] = 128;
+            buffer[rawIndex + 1] = 128;
+
+            int widthXHeight = width * height;
+            int widthThreshold = width / 2;
+            if (normalizedIndex < widthXHeight / 2)
+            {
+                if (normalizedIndex % width < widthThreshold)
+                {
+                    // RED
+                    AddWithoutRollover(buffer, rawIndex, -44);
+                    AddWithoutRollover(buffer, rawIndex + 1, 127);
+                }
+                else
+                {
+                    // GREEN
+                    AddWithoutRollover(buffer, rawIndex, -128);
+                    AddWithoutRollover(buffer, rawIndex + 1, -128);
+                }
+            }
+            else
+            {
+                if (normalizedIndex % width < widthThreshold)
+                {
+                    // BLUE
+                    AddWithoutRollover(buffer, rawIndex, 127);
+                    AddWithoutRollover(buffer, rawIndex + 1, -8);
+                }
+                else
+                {
+                    // YELLOW
+                    AddWithoutRollover(buffer, rawIndex, -128);
+                    AddWithoutRollover(buffer, rawIndex + 1, 20);
+                }
+            }
         }
 
         /// <summary>
@@ -128,6 +228,11 @@ namespace Sample.HueBot
         /// <param name="height">The height.</param>
         private static void ApplyHue(byte[] buffer, CallHandler.HueColor hueColor, int width, int height)
         {
+            if (hueColor == CallHandler.HueColor.Warhol)
+            {
+                Warhol(buffer, width, height);
+            }
+
             int widthXheight = width * height;
             for (var index = widthXheight; index < widthXheight * 3 / 2; index += 2)
             {
@@ -146,6 +251,10 @@ namespace Sample.HueBot
                     case CallHandler.HueColor.Green:
                         AddWithoutRollover(buffer, index, -33);
                         AddWithoutRollover(buffer, index + 1, -41);
+                        break;
+
+                    case CallHandler.HueColor.Warhol:
+                        ApplyWarholHue(buffer, index, index - widthXheight, width, height / 2);
                         break;
 
                     default: break;
